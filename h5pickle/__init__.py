@@ -25,6 +25,7 @@ cachetools
 
 import json
 import h5py
+from h5py._objects import phil
 from cachetools import LRUCache
 
 class LRUFileCache(LRUCache):
@@ -69,13 +70,20 @@ class PickleAbleH5PyObject(object):
         self.__init__(state['file'][state['name']].id)
 
 class Dataset(PickleAbleH5PyObject, h5py.Dataset):
-    """Mix in our pickling class"""
-    pass
+    """Mix in our pickling class and override file() method from HLObject"""
+    def file(self):
+        """ Return a File instance associated with this object """
+        with phil:
+            return File(self.file_info.filename)
 
 class Group(PickleAbleH5PyObject, h5py.Group):
     """Overwrite group to allow pickling, and to create new groups and datasets
     of the right type (i.e. the ones defined in this module).
     """
+    def file(self):
+        """ Return a File instance associated with this object """
+        with phil:
+            return File(self.file_info.filename)
     def __getitem__(self, name):
         obj = h5py_wrap_type(h5py.Group.__getitem__(self, name))
         # If it is a group or dataset copy the current file info in
